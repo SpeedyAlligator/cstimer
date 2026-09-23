@@ -25,6 +25,7 @@
   <script type="text/javascript" src="js/lib/cubeutil.js"></script>
   <script type="text/javascript" src="js/lib/puzzlefactory.js"></script>
   <script type="text/javascript" src="js/kernel.js"></script>
+  <script type="text/javascript" src="js/production_scrambles.js"></script>
   <script type="text/javascript" src="js/production.js"></script>
   <script type="text/javascript" src="js/export.js"></script>
   <script type="text/javascript" src="js/logohint.js"></script>

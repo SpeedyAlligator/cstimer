@@ -1,6 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build:pages": "node scripts/build-pages.mjs"
+    "build:pages": "node scripts/build-pages.mjs",
+    "generate:production-scrambles": "node scripts/cfop_scrambles/generate.js",
+    "validate:production-scrambles": "node scripts/cfop_scrambles/validate_generated_scrambles.js"
   }
 }

@@ -57,7 +57,7 @@ var production = execMain(function() {
 				randomSeed: ''
 			},
 			video: {enabled: false, scale: 1},
-			scramble: {persistentCategory: 'normal', pendingCategory: '', nextSpecificId: '', saved: [], lastOverride: ''},
+			scramble: {persistentCategory: 'normal', pendingCategory: '', nextSpecificId: '', saved: [], lastOverride: '', historyWindow: 10},
 			openGesture: {logoEnabled: true, logoClicks: 7, logoWindowMs: 3000, shiftEnabled: true, shiftHoldMs: 2000},
 			bindings: bindingDefaults()
 		};
@@ -152,41 +152,25 @@ var production = execMain(function() {
 	}
 	function cancelSolve() { activeSolve = null; }
 
-	/* Curated 3×3 archive. It is deliberately a small data layer, not a solver;
-	 * evaluateScramble below is an extension point for future CFOP analysis. */
-	var curated = {
-		good: [
-			{scramble: "R U R' U' F2 D R2 U2 B2 L2 D' F2 U R2 F2", rating: 6.8, crossMoves: 5, crossDifficulty: 'easy', xcrossCount: 0, freePairs: 1, f2lQuality: 'good', estimatedMoves: 48, tags: ['easy-cross'], notes: 'Obvious opening pair.'},
-			{scramble: "F R2 U' B2 R' D2 L2 U F2 U2 R2 B' L2 D'", rating: 7, crossMoves: 4, crossDifficulty: 'easy', xcrossCount: 1, freePairs: 0, f2lQuality: 'good', estimatedMoves: 46, tags: ['easy-cross', 'xcross'], notes: 'Simple cross line.'},
-			{scramble: "U2 R2 F2 U B2 L2 D' R2 U' L2 F' R U2 B'", rating: 6.7, crossMoves: 5, crossDifficulty: 'easy', xcrossCount: 0, freePairs: 1, f2lQuality: 'good', estimatedMoves: 49, tags: ['first-pair'], notes: 'Favorable front-right setup.'}
-		],
-		great: [
-			{scramble: "R2 U F2 D' L2 U2 R2 B2 U' F2 R' U2 L B'", rating: 8.1, crossMoves: 3, crossDifficulty: 'very_easy', xcrossCount: 1, freePairs: 1, f2lQuality: 'very_good', estimatedMoves: 41, tags: ['easy-cross', 'xcross', 'free-pair'], notes: 'Short cross and tracked pair.'},
-			{scramble: "F2 U' R2 D B2 U2 L2 F2 D' R U2 B' R2", rating: 8.3, crossMoves: 3, crossDifficulty: 'very_easy', xcrossCount: 1, freePairs: 1, f2lQuality: 'very_good', estimatedMoves: 40, tags: ['easy-cross', 'free-pair'], notes: 'Strong first two pairs.'},
-			{scramble: "U R2 F' U2 L2 D B2 R2 U' F2 D' L B'", rating: 8, crossMoves: 4, crossDifficulty: 'very_easy', xcrossCount: 1, freePairs: 1, f2lQuality: 'very_good', estimatedMoves: 42, tags: ['xcross'], notes: 'Repeatable opening.'}
-		],
-		insane: [
-			{scramble: "R2 U2 F2 D' R2 B2 U L2 F' U2 R B'", rating: 9, crossMoves: 2, crossDifficulty: 'very_easy', xcrossCount: 2, freePairs: 1, f2lQuality: 'excellent', estimatedMoves: 34, tags: ['double-xcross', 'free-pair'], notes: 'Double-xcross potential.'},
-			{scramble: "F2 R U2 B2 L' U R2 D' F2 U2 L B'", rating: 9.1, crossMoves: 2, crossDifficulty: 'very_easy', xcrossCount: 2, freePairs: 2, f2lQuality: 'excellent', estimatedMoves: 33, tags: ['double-xcross', 'two-free-pairs'], notes: 'Multiple pairs resolve early.'},
-			{scramble: "U2 R2 F' D2 B2 L2 U R' F2 U' L B'", rating: 8.9, crossMoves: 2, crossDifficulty: 'very_easy', xcrossCount: 1, freePairs: 2, f2lQuality: 'excellent', estimatedMoves: 35, tags: ['easy-cross', 'free-pairs'], notes: 'Low-effort F2L entry.'}
-		],
-		jackpot: [
-			{scramble: "R2 U F2 L' U2 B2 R U' F2 D' L B'", rating: 9.7, crossMoves: 1, crossDifficulty: 'trivial', xcrossCount: 2, freePairs: 2, f2lQuality: 'exceptional', pllSkip: true, estimatedMoves: 29, tags: ['double-xcross', 'pll-skip'], notes: 'Hero scramble.'},
-			{scramble: "F2 U' R2 B L2 U2 F' R U B2 D' L'", rating: 9.6, crossMoves: 1, crossDifficulty: 'trivial', xcrossCount: 2, freePairs: 2, f2lQuality: 'exceptional', ollSkip: true, estimatedMoves: 30, tags: ['double-xcross', 'oll-skip'], notes: 'Favorable F2L and last layer.'},
-			{scramble: "U R2 F B2 U' L2 D R' F2 U2 L B'", rating: 9.5, crossMoves: 2, crossDifficulty: 'trivial', xcrossCount: 2, freePairs: 1, f2lQuality: 'exceptional', pllSkip: true, estimatedMoves: 31, tags: ['xcross', 'pll-skip'], notes: 'Take-friendly standout.'}
-		]
-	};
+	/* Generated at build time by scripts/cfop_scrambles/generate.js. The runtime
+	 * only picks a saved record: it never invokes a cube solver. */
+	var curatedDatabase = window.PRODUCTION_SCRAMBLES || {version: 1, categories: {}};
+	var curated = curatedDatabase.categories || {};
+	var categoryNames = ['good', 'great', 'insane', 'jackpot'];
 	function is333(type) { return /^(?:333|333oh|333ft|mrbl)$/.test(type || ''); }
 	function saved(id) {
 		for (var i = 0; i < state.scramble.saved.length; i++) { if (state.scramble.saved[i].id === id) { return state.scramble.saved[i]; } }
 	}
+	function hasCurated(category) { return !!(curated[category] && curated[category].length); }
 	function nextCurated(category) {
-		var choices = curated[category], available = [], i;
-		if (!choices) { return; }
-		for (i = 0; i < choices.length; i++) { if (choices[i].scramble !== lastCurated[category]) { available.push(choices[i]); } }
+		var choices = curated[category], available = [], recent = lastCurated[category] || [], i;
+		if (!choices || !choices.length) { return; }
+		for (i = 0; i < choices.length; i++) { if (recent.indexOf(choices[i].scramble) < 0) { available.push(choices[i]); } }
 		available = available.length ? available : choices;
 		var entry = available[Math.floor(Math.random() * available.length)];
-		lastCurated[category] = entry.scramble;
+		recent.unshift(entry.scramble);
+		recent.splice(Math.max(1, Math.round(clamp(state.scramble.historyWindow, 10, 1, 100))));
+		lastCurated[category] = recent;
 		return entry;
 	}
 	function armCategory(category) {
@@ -228,17 +212,19 @@ var production = execMain(function() {
 		return null;
 	}
 	function requiresManualScrambleAdvance() {
-		return !!(state.scramble.nextSpecificId || state.scramble.pendingCategory || state.scramble.persistentCategory !== 'normal');
+		return !!(state.scramble.nextSpecificId || state.scramble.pendingCategory && hasCurated(state.scramble.pendingCategory) || state.scramble.persistentCategory !== 'normal' && hasCurated(state.scramble.persistentCategory));
 	}
 	function evaluateScramble(text) {
 		var category, i;
-		for (category in curated) for (i = 0; i < curated[category].length; i++) if (curated[category][i].scramble === text) { return copy(curated[category][i]); }
-		return {crossMoves: null, crossDifficulty: 'unrated', xcrossCount: 0, freePairs: 0, estimatedF2LQuality: 'unrated', rating: null, estimatedMoves: $.trim(text || '').split(/\s+/).length};
+		for (category in curated) for (i = 0; i < (curated[category] || []).length; i++) if (curated[category][i].scramble === text) { return copy(curated[category][i]); }
+		return {crossMoves: null, classification: 'unrated', crossColor: null, xcrossMoves: null, xxcrossMoves: null, xxxcrossMoves: null, estimatedMoves: $.trim(text || '').split(/\s+/).length};
 	}
 	function generateScrambleMeetingCriteria(criteria) {
 		criteria = criteria || {};
-		var categories = ['jackpot', 'insane', 'great', 'good'];
-		for (var i = 0; i < categories.length; i++) if (!criteria.minimumRating || curated[categories[i]][0].rating >= criteria.minimumRating) { return copy(nextCurated(categories[i])); }
+		var categories = ['jackpot', 'insane', 'great', 'good'], minimum = criteria.minimumCategory;
+		for (var i = 0; i < categories.length; i++) {
+			if ((!minimum || categories.indexOf(categories[i]) <= categories.indexOf(minimum)) && hasCurated(categories[i])) { return copy(nextCurated(categories[i])); }
+		}
 		return null;
 	}
 
@@ -389,9 +375,11 @@ var production = execMain(function() {
 			$.each(s.saved, function(_, item) { list.append($('<div>').append($('<span>').text(item.name + ': ' + item.scramble), ' ', $('<span class="click">').text('remove').click(function() { s.saved = $.grep(s.saved, function(candidate) { return candidate.id !== item.id; }); commit(); }))); });
 			panel.append(row('Saved archive', list));
 		}
-		var archive = $('<table class="production-archive">').append('<tr><th>Category</th><th>Rating</th><th>Tags</th></tr>');
-		$.each(['good', 'great', 'insane', 'jackpot'], function(_, cat) { archive.append($('<tr>').append($('<td>').text(cat), $('<td>').text(curated[cat][0].rating), $('<td>').text(curated[cat][0].tags.join(', ')))); });
-		panel.append(row('Curated archive', archive));
+		var archive = $('<table class="production-archive">').append('<tr><th>Category</th><th>Verified scrambles</th><th>Exact requirement</th></tr>');
+		var requirements = {good: 'Cross', great: 'XCross', insane: 'XXCross', jackpot: 'XXXCross+'};
+		$.each(categoryNames, function(_, cat) { archive.append($('<tr>').append($('<td>').text(cat), $('<td>').text((curated[cat] || []).length), $('<td>').text(requirements[cat]))); });
+		panel.append(row('Generated database', archive));
+		panel.append(row('Database build', $('<span>').text(curatedDatabase.generatedAt ? curatedDatabase.generatedAt : 'No generated records loaded')));
 		panel.append(row('Next override', $('<strong>').text(s.nextSpecificId ? 'Specific saved scramble' : (s.pendingCategory || 'None'))));
 		return panel;
 	}

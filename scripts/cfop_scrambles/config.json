@@ -1,0 +1,22 @@
+{
+  "scrambleSource": "random-state",
+  "scrambleLength": 20,
+  "crossColor": "WHITE_ONLY",
+  "targets": {
+    "good": 100,
+    "great": 100,
+    "insane": 75,
+    "jackpot": 50
+  },
+  "thresholds": {
+    "crossMax": 3,
+    "xcrossMax": 5,
+    "xxcrossMax": 8,
+    "xxxcrossMax": 9
+  },
+  "candidateLimit": 250000,
+  "timeLimitMinutes": 60,
+  "progressEvery": 250,
+  "historyWindow": 10,
+  "seed": ""
+}

@@ -26,6 +26,7 @@ lib/min2phase.js \
 lib/cubeutil.js \
 lib/puzzlefactory.js \
 kernel.js \
+production_scrambles.js \
 production.js \
 export.js \
 logohint.js \

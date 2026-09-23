@@ -234,23 +234,42 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 		init();
 		var ret = [];
 		for (var face = 0; face < 6; face++) {
-			var flip = 0;
-			var perm = 0;
-			for (var i = 0; i < moves.length; i++) {
-				var m = moveIdx[face].indexOf("FRUBLD".charAt(moves[i][0]));
-				var p = moves[i][2];
-				for (var j = 0; j < p; j++) {
-					flip = fmv(flip, m);
-					perm = pmv(perm, m);
-				}
-			}
-			var sol = solvCross.solve([perm, flip], 0, 50);
-			for (var i = 0; i < sol.length; i++) {
-				sol[i] = "FRUBLD".charAt(sol[i][0]) + " 2'".charAt(sol[i][1])
-			}
-			ret.push(sol);
+			ret.push(solve_cross_face(moves, face, 50));
 		}
 		return ret;
+	}
+
+	function solve_cross_face(moves, face, maxDepth) {
+		init();
+		var state = cross_coordinates(moves, face);
+		var sol = solvCross.solve([state[0], state[1]], 0, maxDepth || 50);
+		if (!sol) {
+			return null;
+		}
+		for (var k = 0; k < sol.length; k++) {
+			sol[k] = "FRUBLD".charAt(sol[k][0]) + " 2'".charAt(sol[k][1]);
+		}
+		return sol;
+	}
+
+	function cross_coordinates(moves, face) {
+		var flip = 0;
+		var perm = 0;
+		for (var i = 0; i < moves.length; i++) {
+			var m = moveIdx[face].indexOf("FRUBLD".charAt(moves[i][0]));
+			var p = moves[i][2];
+			for (var j = 0; j < p; j++) {
+				flip = fmv(flip, m);
+				perm = pmv(perm, m);
+			}
+		}
+		return [perm, flip];
+	}
+
+	function screen_cross(moves, face) {
+		init();
+		var state = cross_coordinates(moves, face == undefined ? 0 : face);
+		return Math.max(getPruning(permPrun, state[0]), getPruning(flipPrun, state[1]));
 	}
 
 	function solve_xcross(moves, face) {
@@ -283,9 +302,99 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 	}
 
 	function solve_xxcross(moves, face, is3x) {
+		var detail = solve_xxcross_detail(moves, face, is3x, 20);
+		return detail && detail.solution || [];
+	}
+
+	/*
+	 * Structured variants are shared by the offline production-scramble
+	 * generator.  The interactive Cross tool above keeps its historical array
+	 * result while the generator receives the exact depth and selected slot set.
+	 */
+	function solve_xcross_detail(moves, face, maxDepth) {
+		var state = xcross_coordinates(moves, face);
+		var flip = state[0];
+		var perm = state[1];
+		var e1 = state[2];
+		var c1 = state[3];
+		var idxs = [];
+		for (var k = 0; k < 4; k++) {
+			idxs.push([perm, flip, e1[k], c1[k], k]);
+		}
+		var result = solvXCross.solveMulti(idxs, 0, maxDepth || 20);
+		if (!result) {
+			return null;
+		}
+		var solution = result[0].map(function(move) {
+			return "FRUBLD".charAt(move[0]) + " 2'".charAt(move[1]);
+		});
+		return {moves: solution.length, slot: ['FR', 'FL', 'BL', 'BR'][result[1]], solution: solution};
+	}
+
+	function xcross_coordinates(moves, face) {
+		xinit();
+		var flip = 0;
+		var perm = 0;
+		var e1 = [8, 10, 12, 14];
+		var c1 = [12, 15, 18, 21];
+		for (var i = 0; i < moves.length; i++) {
+			var m = moveIdx[face].indexOf("FRUBLD".charAt(moves[i][0]));
+			var p = moves[i][2];
+			for (var j = 0; j < p; j++) {
+				flip = fmv(flip, m);
+				perm = pmv(perm, m);
+				for (var obj = 0; obj < 4; obj++) {
+					e1[obj] = e1mv[e1[obj]][m];
+					c1[obj] = c1mv[c1[obj]][m];
+				}
+			}
+		}
+		return [flip, perm, e1, c1];
+	}
+
+	function screen_xcross(moves, face) {
+		var state = xcross_coordinates(moves, face == undefined ? 0 : face);
+		var score = 99;
+		for (var i = 0; i < 4; i++) {
+			score = Math.min(score, Math.max(
+				getPruning(permPrun, state[1]),
+				getPruning(flipPrun, state[0]),
+				getPruning(ecPrun[i], state[3][i] * 24 + state[2][i])
+			));
+		}
+		return score;
+	}
+
+	function solve_xxcross_detail(moves, face, is3x, maxDepth) {
+		var states = xxcross_coordinates(moves, face);
+		var idxs = states[0];
+		var id3s = states[1];
+		var pairSlots = states[2];
+		var tripleSlots = states[3];
+		var result = is3x ? solvXXXCross.solveMulti(id3s, 0, maxDepth || 20) : solvXXCross.solveMulti(idxs, 0, maxDepth || 20);
+		if (!result) {
+			return null;
+		}
+		var resultIdx = result[1];
+		var rotation = is3x ? resultIdx : (resultIdx >> 1);
+		var solution = result[0].map(function(move) {
+			return yrotIdx[rotation][move[0]] + " 2'"[move[1]];
+		});
+		return {moves: solution.length, slots: is3x ? tripleSlots[resultIdx] : pairSlots[resultIdx], solution: solution};
+	}
+
+	function xxcross_coordinates(moves, face) {
 		xxinit();
 		var idxs = [];
 		var id3s = [];
+		var pairSlots = [];
+		var tripleSlots = [];
+		var slotRots = [
+			['FR', 'FL', 'BL', 'BR'],
+			['BR', 'FR', 'FL', 'BL'],
+			['BL', 'BR', 'FR', 'FL'],
+			['FL', 'BL', 'BR', 'FR']
+		];
 		var yrot = 0;
 		for (yrot = 0; yrot < 4; yrot++) {
 			var flip = 0;
@@ -303,13 +412,63 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 				}
 			}
 			idxs.push([perm, flip, e1[0], c1[0], e1[1], c1[1], xxPrun01]);
+			pairSlots.push([slotRots[yrot][0], slotRots[yrot][1]]);
 			idxs.push([perm, flip, e1[0], c1[0], e1[2], c1[2], xxPrun02]);
+			pairSlots.push([slotRots[yrot][0], slotRots[yrot][2]]);
 			id3s.push([perm, flip, e1[0], c1[0], e1[1], c1[1], e1[2], c1[2]]);
+			tripleSlots.push([slotRots[yrot][0], slotRots[yrot][1], slotRots[yrot][2]]);
 		}
-		var tt = +new Date;
-		var sol = is3x ? solvXXXCross.solveMulti(id3s, 0, 20) : solvXXCross.solveMulti(idxs, 0, 20);
-		var yrot = is3x ? sol[1] : (sol[1] >> 1);
-		return sol[0].map((move) => yrotIdx[yrot][move[0]] + " 2'"[move[1]]);
+		return [idxs, id3s, pairSlots, tripleSlots];
+	}
+
+	function screen_xxcross(moves, face, is3x) {
+		var states = xxcross_coordinates(moves, face == undefined ? 0 : face);
+		var idxs = states[0];
+		var score = 99;
+		for (var i = 0; i < idxs.length; i++) {
+			var state = idxs[i];
+			var crossScore = Math.max(getPruning(permPrun, state[0]), getPruning(flipPrun, state[1]));
+			if (is3x) {
+				state = states[1][~~(i / 2)];
+				crossScore = Math.max(crossScore,
+					getPruning(xxPrun01, state[3] * 24 + state[2] + 576 * (state[5] * 24 + state[4])),
+					getPruning(xxPrun02, state[3] * 24 + state[2] + 576 * (state[7] * 24 + state[6]))
+				);
+			} else {
+				crossScore = Math.max(crossScore, getPruning(state[6], state[3] * 24 + state[2] + 576 * (state[5] * 24 + state[4])));
+			}
+			score = Math.min(score, crossScore);
+		}
+		return score;
+	}
+
+	function analyze(moves, face, limits) {
+		limits = limits || {};
+		face = face == undefined ? 0 : face;
+		init();
+		var crossSol = solve_cross_face(moves, face, limits.crossMax || 50);
+		if (!crossSol) {
+			return {cross: {moves: Infinity, solution: []}, xcross: null, xxcross: null, xxxcross: null};
+		}
+		var result = {
+			cross: {moves: crossSol.length, solution: crossSol},
+			xcross: null,
+			xxcross: null,
+			xxxcross: null
+		};
+		if (limits.crossMax != undefined && crossSol.length > limits.crossMax) {
+			return result;
+		}
+		result.xcross = solve_xcross_detail(moves, face, limits.xcrossMax || 20);
+		if (!result.xcross || limits.xcrossMax != undefined && result.xcross.moves > limits.xcrossMax) {
+			return result;
+		}
+		result.xxcross = solve_xxcross_detail(moves, face, false, limits.xxcrossMax || 20);
+		if (!result.xxcross || limits.xxcrossMax != undefined && result.xxcross.moves > limits.xxcrossMax) {
+			return result;
+		}
+		result.xxxcross = solve_xxcross_detail(moves, face, true, limits.xxxcrossMax || 20);
+		return result;
 	}
 
 	function fullInit() {
@@ -505,6 +664,10 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 
 	return {
 		solve: solve_cross,
+		analyze: analyze,
+		screen: screen_cross,
+		screenXCross: screen_xcross,
+		screenXXCross: screen_xxcross,
 		getEasyCross: getEasyCross,
 		getEasyXCross: getEasyXCross
 	}
