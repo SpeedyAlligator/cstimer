@@ -870,6 +870,126 @@ div.helptable ul {
 	bottom: 20%;
 }
 
+.dialogproduction {
+	left: 15%;
+	right: 15%;
+	top: 12%;
+	bottom: 12%;
+}
+
+.production-modal {
+	font-family: Arial;
+	text-align: left;
+	overflow: hidden;
+}
+
+.production-tabs {
+	white-space: nowrap;
+	border-bottom: 1px solid;
+	padding-bottom: 0.2em;
+}
+
+.production-tabs .tab {
+	display: inline-block;
+	margin: 0 0.2em 0 0;
+	padding: 0.1em 0.45em;
+	font-family: Impact, Arial;
+	cursor: pointer;
+}
+
+.production-tabs .tab.enable {
+	border-style: inset;
+}
+
+.production-tab-content {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 2.1em;
+	bottom: 0;
+	overflow-y: auto;
+	padding-right: 0.2em;
+}
+
+.production-panel {
+	padding: 0.25em;
+	line-height: 1.55em;
+}
+
+.production-help {
+	font-size: 0.85em;
+	line-height: 1.3em;
+	margin: 0.2em 0 0.45em;
+	opacity: 0.8;
+}
+
+.production-row {
+	border-bottom: 1px dashed;
+	padding: 0.2em 0;
+}
+
+.production-row > strong {
+	display: inline-block;
+	width: 10em;
+	vertical-align: top;
+}
+
+.production-controls {
+	display: inline-block;
+	max-width: calc(100% - 10.4em);
+}
+
+.production-field, .production-check, .production-presets > input, .production-clear-binding {
+	margin-right: 0.35em;
+	white-space: nowrap;
+}
+
+.production-scramble-input {
+	width: 95%;
+	font-family: monospace;
+	vertical-align: top;
+}
+
+.production-archive, .production-bindings, .production-status-table {
+	border-collapse: collapse;
+	font-size: 0.85em;
+}
+
+.production-archive td, .production-archive th, .production-bindings td, .production-bindings th, .production-status-table td, .production-status-table th {
+	border: 1px solid;
+	padding: 0.16em 0.28em;
+}
+
+.production-bindings {
+	width: 100%;
+	line-height: 1.2em;
+}
+
+.production-bindings input[type='text'] {
+	max-width: 5em;
+}
+
+.production-status-table th {
+	text-align: right;
+	white-space: nowrap;
+}
+
+.production-status-table td {
+	text-align: left;
+}
+
+.production-saved-list {
+	font-family: monospace;
+	font-size: 0.8em;
+	line-height: 1.3em;
+	word-break: break-word;
+}
+
+.production-clear-binding {
+	cursor: pointer;
+	font-weight: bold;
+}
+
 .dialogcasestats {
 	left: 30%;
 	right: 30%;
@@ -1203,6 +1323,21 @@ html.m .mhide, html:not(.m) .mshow {
 .m .dialogoption, .m .dialogshare, .m .dialoginput, .m .dialogstats, .m .dialogcasestats, .m .dialogssmgr, .m .dialogscropt, .m .dialogexport, .m .dialoglogo, .m .dialogdonate {
 	left: 5%;
 	right: 5%;
+}
+
+.m .dialogproduction {
+	left: 3%;
+	right: 3%;
+	top: 8%;
+	bottom: 8%;
+}
+
+.m .production-row > strong {
+	width: 8em;
+}
+
+.m .production-controls {
+	max-width: calc(100% - 8.4em);
 }
 
 .m .dialogcfm {

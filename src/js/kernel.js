@@ -398,6 +398,10 @@ var kernel = execMain(function() {
 		var gray;
 		var leftbar;
 
+		function visualDuration(applicationMilliseconds) {
+			return window.production ? production.wallDuration(applicationMilliseconds) : applicationMilliseconds;
+		}
+
 		function addButton(module, button, callback, index) {
 			leftbar = leftbar || $('#leftbar');
 			leftbar.children('.c' + index).click(callback).find('span:first').html(button);
@@ -409,14 +413,14 @@ var kernel = execMain(function() {
 			if (modules[module].button) {//enable
 				mybutton.removeClass("enable");
 				if (!isHide || !modules[module].auto) {
-					modules[module].div.stop(true, true).fadeOut(200, (function(module) {
+					modules[module].div.stop(true, true).fadeOut(visualDuration(200), (function(module) {
 						return function() {pushSignal('button', [module, false]);};
 					})(module));
 				}
 			} else {
 				mybutton.addClass("enable");
 				pushSignal('button', [module, true]);
-				modules[module].div.stop(true, true).fadeIn(200);
+				modules[module].div.stop(true, true).fadeIn(visualDuration(200));
 				if (isHide && modules[module].auto) {
 					modules[module].div.hide();
 				}
@@ -534,17 +538,17 @@ var kernel = execMain(function() {
 				})(values[i][1])));
 			}
 
-			dialog.stop(true, true).fadeTo(100, 0.98, function() {
+			dialog.stop(true, true).fadeTo(visualDuration(100), 0.98, function() {
 				values[0].focus();
 				callback && callback();
 			});
-			gray.stop(true, true).fadeIn(100, function(diagclass) {
+			gray.stop(true, true).fadeIn(visualDuration(100), function(diagclass) {
 				pushSignal('dialog', diagclass);
 			}.bind(null, diagclass));
 		}
 
 		function hideDialog() {
-			dialog.stop(true, true).fadeOut(100, function() {
+			dialog.stop(true, true).fadeOut(visualDuration(100), function() {
 				if (isPopup) {
 					return;
 				}
@@ -565,7 +569,7 @@ var kernel = execMain(function() {
 			toggleLeftBar();
 			for (var module in modules) {
 				if (modules[module].auto && modules[module].button) {
-					modules[module].div.stop(true, true).fadeOut(100);
+					modules[module].div.stop(true, true).fadeOut(visualDuration(100));
 				}
 			}
 			pushSignal('ashow', false);
@@ -579,7 +583,7 @@ var kernel = execMain(function() {
 			toggleLeftBar();
 			for (var module in modules) {
 				if (modules[module].auto && modules[module].button) {
-					modules[module].div.stop(true, true).fadeIn(100);
+					modules[module].div.stop(true, true).fadeIn(visualDuration(100));
 				}
 			}
 			pushSignal('ashow', true);

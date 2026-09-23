@@ -27,6 +27,7 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 	var lastTime = [];
 
 	function reset() {
+		window.production && production.cancelSolve();
 		var type = getProp('input');
 		setStatus(-1);
 
@@ -112,7 +113,8 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 			if (status == 0 || status == -1 || status == -4 || runningId == undefined) {
 				return;
 			}
-			var time = $.now() - startTime;
+			var appElapsed = (window.production ? production.now() : $.now()) - startTime;
+			var time = status > 0 && window.production ? production.displayElapsed(appElapsed) : appElapsed;
 			if (status == -3 || (status == -2 && checkUseIns())) {
 				var insVal = TIMER_INSPECT;
 				if (getProp('timeU') != 'n') {
@@ -423,7 +425,7 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 		}
 
 		function onkeyup(keyCode, isTrigger) {
-			var now = $.now();
+			var now = window.production ? production.now() : $.now();
 			if (isTrigger) {
 				if (status == 0) {
 					setStatus(-1);
@@ -436,6 +438,7 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 				} else if (status == -2) {
 					lastDown = now;
 					var insTime = checkUseIns() ? (now - startTime) : 0;
+					window.production && production.beginSolve();
 					startTime = now;
 					curTime = [insTime > 17000 ? -1 : (insTime > 15000 ? 2000 : 0)];
 					setStatus(getProp('phases'));
@@ -460,13 +463,14 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 					&& !(stopKey == 'l' && keyCode > 64 && keyCode <= 90)) {
 				return;
 			}
-			var now = $.now();
+			var now = window.production ? production.now() : $.now();
 			if (now - lastDown < 200) {
 				return;
 			}
 			if (status > 0) {
 				lastDown = now;
-				curTime[status] = lastDown - startTime;
+				var elapsed = lastDown - startTime;
+				curTime[status] = status == 1 && window.production ? production.finishSolve(elapsed) : elapsed;
 				if (keyCode == 27) {
 					var times = [-1],
 						i = 1;
@@ -489,7 +493,7 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 				}
 			} else if (isTrigger) {
 				if ((status == (checkUseIns() ? -3 : -1)) && pressreadyId == undefined) {
-					pressreadyId = setTimeout(pressReady, getProp('preTime'));
+					pressreadyId = window.production ? production.setTimeout(pressReady, getProp('preTime')) : setTimeout(pressReady, getProp('preTime'));
 				} else if (status == -1 && checkUseIns()) {
 					setStatus(-4);
 					resetTrain();
@@ -627,10 +631,13 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 	}
 
 	function onkeydown(e) {
+		var keyCode = getKeyCode(e);
+		if (window.production && production.handleTimerKeydown(e, keyCode, status)) {
+			return;
+		}
 		if (ui.isPop()) {
 			return;
 		}
-		var keyCode = getKeyCode(e);
 		var focusObj = $(document.activeElement);
 		if (focusObj.is('input, textarea, select')) {
 			if (getProp('input') == 'i' && focusObj.prop('id') == 'inputTimer') {
@@ -674,10 +681,13 @@ var timer = execMain(function(regListener, regProp, getProp, pretty, ui, pushSig
 	}
 
 	function onkeyup(e) {
+		var keyCode = getKeyCode(e);
+		if (window.production && production.handleTimerKeyup(e, keyCode)) {
+			return;
+		}
 		if (ui.isPop()) {
 			return;
 		}
-		var keyCode = getKeyCode(e);
 		var focusObj = $(document.activeElement);
 		if (focusObj.is('input, textarea, select')) {
 			if (getProp('input') == 'i' && focusObj.prop('id') == 'inputTimer') {

@@ -383,12 +383,19 @@ var scramble = ISCSTIMER && execMain(function(rn, rndEl) {
 		}
 	});
 
-	function calcScramble() {
+	function calcScramble(allowProduction) {
 		if (!type) {
 			return;
 		}
 		scramble = "";
 		var realType = alias[type] || type;
+		if (allowProduction !== false && window.production) {
+			var productionScramble = production.requestScramble(realType);
+			if (productionScramble) {
+				scramble = productionScramble;
+				return;
+			}
+		}
 
 		if (realType == 'input') {
 			scramble = inputScrambleGen.next();
@@ -738,6 +745,9 @@ var scramble = ISCSTIMER && execMain(function(rn, rndEl) {
 
 	function procSignal(signal, value) {
 		if (signal == 'time') {
+			if (window.production && production.requiresManualScrambleAdvance()) {
+				return;
+			}
 			if (isEn) {
 				genScramble();
 			} else {
@@ -862,7 +872,7 @@ var scramble = ISCSTIMER && execMain(function(rn, rndEl) {
 			var scramble_copy = scramble;
 			var pre = prefix.val();
 			for (var i = 0; i < n_scramble; i++) {
-				calcScramble();
+				calcScramble(false);
 				genScrambles += pre.replace('1', i + 1) + scramble + "\n";
 			}
 			scramble = scramble_copy;

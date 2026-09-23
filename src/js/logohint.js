@@ -36,15 +36,16 @@ var logohint = execMain(function() {
 			'<span class="msg">' + curMsg + '</span>' +
 			'<div class="pad" style="width:' + logow + 'px; margin-right:' + (-logow) + 'px;">csTimer</div>');
 		logocc.removeClass('hint');
-		var duration = (curMsg.length + 15) * 0.1 + 's';
+		var appDuration = (curMsg.length + 15) * 0.1;
+		var duration = (window.production ? appDuration / production.getScale() : appDuration) + 's';
 		logocc.css({
 			'-webkit-animation-duration': duration,
 			'-moz-animation-duration': duration,
 			'animation-duration': duration
 		});
-		setTimeout(function() {
+		(window.production ? production.setTimeout : setTimeout)(function() {
 			logocc.addClass('hint');
-		});
+		}, 0);
 	}
 
 	function checkAnimation() {
@@ -79,6 +80,9 @@ var logohint = execMain(function() {
 			render();
 		});
 		logo.click(function() {
+			if (window.production && production.handleLogoClick()) {
+				return;
+			}
 			if (location.protocol != 'https:' && $.confirm('Your access to csTimer is unsafe. Press OK for safe access.')) {
 				location.protocol = 'https:';
 			}
