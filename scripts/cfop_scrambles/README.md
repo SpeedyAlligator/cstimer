@@ -1,68 +1,89 @@
-# Offline CFOP production scramble generator
+# Fixed-orientation CFOP production scramble generator
 
-`generate.js` creates a static database for the film-prop production controls.
-It runs only under Node and uses csTimer's existing exact Cross, XCross, XXCross,
-and XXXCross IDA searches from `src/js/tools/cross.js`; the browser only chooses
-an already verified JSON record.
+This build-time tool generates normal-looking legal 3x3 scrambles, then uses
+csTimer's exact Cross/XCross/XXCross/XXXCross IDA searches and generic F2L
+search to classify the **resulting cube state**. The browser receives static
+JSON only; it never runs a cube search.
 
-The default source is `random-state`, which calls csTimer's normal 3x3
-random-state scramble generator. `random-move` generates conventional legal
-20-move sequences without adjacent same-axis moves and is useful for a fast,
-seeded development run. Neither source constructs a favorable cube state.
+## Mandatory orientation
 
-The default white-cross thresholds are exact solution lengths:
+Apply every generated scramble without rotating the cube:
 
-| Category | Required highest structure |
+| Face | Color |
 | --- | --- |
-| Good | Cross <= 3 |
-| Great | XCross <= 5 |
-| Insane | XXCross <= 8 |
-| Jackpot | XXXCross <= 9 |
+| U | Yellow |
+| D | White |
+| F | Green (facing you) |
+| B | Blue |
+| R | Red |
+| L | Orange |
 
-A candidate receives only its highest qualifying category. The generator stores
-the cross color, exact solution lengths and move sequences, selected F2L slots,
-and explicit `xxxxcross`, `ollSkip`, and `pllSkip` fields (all false unless a
-future exact detector is added). There are no hand-authored ratings or cosmetic
-categories.
+In other words: white down, yellow up, green facing you. Every generator
+check, replay verification, stored slot name, and displayed solution uses this
+single orientation.
+
+## Exact categories
+
+All lengths are total moves from the initial scrambled state, not moves after a
+cross. A scramble is saved only in its highest qualifying category.
+
+| Category | Exact condition |
+| --- | --- |
+| Good | White cross is already solved: `crossMoves = 0`. |
+| Great | Complete XCross in at most 3 moves. |
+| Insane | Complete XXCross in at most 5 moves. |
+| Jackpot | Complete XXXCross in at most 7 moves. |
+| Exceptional Jackpot | Complete F2L/XXXXCross in at most 8 moves; stored inside Jackpot. |
+
+The analyser replays every returned sequence with csTimer's cubie model and
+checks the solved white cross plus the actual standard slots (`FR`, `FL`, `BL`,
+`BR`). It never trusts solver slot labels alone. An Exceptional Jackpot must
+also replay to all four F2L slots solved. The complete-F2L check is performed
+within already qualifying XXXCross Jackpot candidates, where it ranks ahead of
+ordinary Jackpots.
 
 ## Commands
 
-Generate the configured full database (it checkpoints after each progress
-interval and stops at either the candidate or time limit):
+Run a measured empirical survey before a large database run:
+
+```sh
+npm run generate:production-scrambles -- --survey 100000 --scramble-source random-move --seed cfop-survey
+```
+
+Generate the configured database. `random-state` is the default and uses
+csTimer's standard random-state generator; `random-move` is a deterministic
+legal 20-move source for development tests.
 
 ```sh
 npm run generate:production-scrambles
 ```
 
-Make a compact deterministic development database:
+Run a small, reproducible test database:
 
 ```sh
-npm run generate:production-scrambles -- --good-count 10 --great-count 10 --insane-count 5 --jackpot-count 3 --scramble-source random-move --seed film-test --candidate-limit 5000 --progress-every 100
+npm run generate:production-scrambles -- --good-count 10 --great-count 10 --insane-count 5 --jackpot-count 3 --scramble-source random-move --seed fixed-cfop-test --candidate-limit 5000000 --time-limit 60 --progress-every 1000
 ```
 
-Resume an interrupted run; a bare resume reuses the configuration saved in the
-checkpoint:
+Resume an interrupted generation with its recorded configuration:
 
 ```sh
 npm run generate:production-scrambles -- --resume
 ```
 
-Re-check every saved scramble with the same exact solver:
+Verify every generated scramble, exact category, slot list, and stored move
+sequence:
 
 ```sh
 npm run validate:production-scrambles
 ```
 
-Validation checks legal notation and uniqueness, recomputes the highest
-qualifying class, and (for `BEST_OF_SIX`) checks every cross color again.
-
-`--cross-color BEST_OF_SIX` analyzes each candidate for all six cross colors;
-the default `WHITE_ONLY` is substantially faster and is easier to describe in
-production. Other useful options are `--cross-max`, `--xcross-max`,
-`--xxcross-max`, `--xxxcross-max`, `--candidate-limit`, `--time-limit` (in
-minutes), `--output`, `--analysis-output`, `--runtime-js`, and `--checkpoint`.
+The move limits and fixed orientation live only in `config.json`. CLI overrides
+are available for the non-Good limits: `--xcross-max-moves`,
+`--xxcross-max-moves`, `--xxxcross-max-moves`, and
+`--xxxxcross-max-moves`. Other supported controls include target counts,
+candidate/time limits, seed, output paths, and checkpoint path.
 
 Outputs are `src/data/production_scrambles.min.json` (runtime records),
-`src/data/production_scrambles.analysis.json` (complete proof metadata), and
-`src/js/production_scrambles.js` (the browser-loadable copy). The checkpoint is
-ignored by Git so an interrupted production-scale run can be resumed locally.
+`src/data/production_scrambles.analysis.json` (full solutions, slots, replay
+metadata, and quality), and `src/js/production_scrambles.js` (browser copy).
+The local checkpoint is ignored by Git.

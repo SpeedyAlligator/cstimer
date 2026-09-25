@@ -3,6 +3,7 @@
   "scripts": {
     "build:pages": "node scripts/build-pages.mjs",
     "generate:production-scrambles": "node scripts/cfop_scrambles/generate.js",
-    "validate:production-scrambles": "node scripts/cfop_scrambles/validate_generated_scrambles.js"
+    "validate:production-scrambles": "node scripts/cfop_scrambles/validate_generated_scrambles.js",
+    "test:production-scrambles": "node scripts/cfop_scrambles/test.js"
   }
 }

@@ -309,7 +309,8 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 	/*
 	 * Structured variants are shared by the offline production-scramble
 	 * generator.  The interactive Cross tool above keeps its historical array
-	 * result while the generator receives the exact depth and selected slot set.
+	 * result; the generator independently replays each returned sequence to
+	 * establish the physical fixed-orientation F2L slots.
 	 */
 	function solve_xcross_detail(moves, face, maxDepth) {
 		var state = xcross_coordinates(moves, face);
@@ -463,8 +464,14 @@ var cross = (function(createMove, edgeMove, createPrun, setNPerm, getNPerm, Cnk,
 		if (!result.xcross || limits.xcrossMax != undefined && result.xcross.moves > limits.xcrossMax) {
 			return result;
 		}
+		if (limits.stopAfter === 'xcross') {
+			return result;
+		}
 		result.xxcross = solve_xxcross_detail(moves, face, false, limits.xxcrossMax || 20);
 		if (!result.xxcross || limits.xxcrossMax != undefined && result.xxcross.moves > limits.xxcrossMax) {
+			return result;
+		}
+		if (limits.stopAfter === 'xxcross') {
 			return result;
 		}
 		result.xxxcross = solve_xxcross_detail(moves, face, true, limits.xxxcrossMax || 20);

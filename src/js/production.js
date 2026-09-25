@@ -217,7 +217,7 @@ var production = execMain(function() {
 	function evaluateScramble(text) {
 		var category, i;
 		for (category in curated) for (i = 0; i < (curated[category] || []).length; i++) if (curated[category][i].scramble === text) { return copy(curated[category][i]); }
-		return {crossMoves: null, classification: 'unrated', crossColor: null, xcrossMoves: null, xxcrossMoves: null, xxxcrossMoves: null, estimatedMoves: $.trim(text || '').split(/\s+/).length};
+		return {crossMoves: null, category: 'unrated', crossColor: null, xcrossMoves: null, xxcrossMoves: null, xxxcrossMoves: null, estimatedMoves: $.trim(text || '').split(/\s+/).length};
 	}
 	function generateScrambleMeetingCriteria(criteria) {
 		criteria = criteria || {};
@@ -358,7 +358,7 @@ var production = execMain(function() {
 	}
 	function scramblePanel() {
 		var s = state.scramble, panel = $('<div class="production-panel">'), oneShot = $('<select>'), savedPick = $('<select>');
-		panel.append($('<p class="production-help">').text('Arming changes nothing on screen. The current scramble remains until the next manual 3×3 scramble request.'));
+		panel.append($('<p class="production-help">').text('Generated scrambles assume White D, Yellow U, Green F (facing you). Arming changes nothing on screen; the current scramble remains until the next manual 3×3 scramble request.'));
 		panel.append(row('Persistent category', select(s.persistentCategory, categories(), function(v) { s.persistentCategory = v; commit(); })));
 		$.each(categories().slice(1), function(_, item) { oneShot.append($('<option>').val(item[0]).text(item[1])); });
 		panel.append(row('One-shot category', [oneShot, ' ', $('<input type="button">').val('Arm next').click(function() { armCategory(oneShot.val()); })]));
@@ -376,7 +376,7 @@ var production = execMain(function() {
 			panel.append(row('Saved archive', list));
 		}
 		var archive = $('<table class="production-archive">').append('<tr><th>Category</th><th>Verified scrambles</th><th>Exact requirement</th></tr>');
-		var requirements = {good: 'Cross', great: 'XCross', insane: 'XXCross', jackpot: 'XXXCross+'};
+		var requirements = {good: 'Cross already solved (0)', great: '1-3 move XCross', insane: '≤5 move XXCross', jackpot: '≤7 move XXXCross; XXXXCross ranked first'};
 		$.each(categoryNames, function(_, cat) { archive.append($('<tr>').append($('<td>').text(cat), $('<td>').text((curated[cat] || []).length), $('<td>').text(requirements[cat]))); });
 		panel.append(row('Generated database', archive));
 		panel.append(row('Database build', $('<span>').text(curatedDatabase.generatedAt ? curatedDatabase.generatedAt : 'No generated records loaded')));

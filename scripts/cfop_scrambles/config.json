@@ -1,20 +1,36 @@
 {
+  "orientation": {
+    "U": "yellow",
+    "D": "white",
+    "F": "green",
+    "B": "blue",
+    "R": "red",
+    "L": "orange"
+  },
+  "good": {
+    "crossMoves": 0
+  },
+  "great": {
+    "xcrossMaxMoves": 3
+  },
+  "insane": {
+    "xxcrossMaxMoves": 5
+  },
+  "jackpot": {
+    "xxxcrossMaxMoves": 7
+  },
+  "exceptionalJackpot": {
+    "xxxxcrossMaxMoves": 8
+  },
   "scrambleSource": "random-state",
   "scrambleLength": 20,
-  "crossColor": "WHITE_ONLY",
   "targets": {
     "good": 100,
     "great": 100,
     "insane": 75,
     "jackpot": 50
   },
-  "thresholds": {
-    "crossMax": 3,
-    "xcrossMax": 5,
-    "xxcrossMax": 8,
-    "xxxcrossMax": 9
-  },
-  "candidateLimit": 250000,
+  "candidateLimit": 5000000,
   "timeLimitMinutes": 60,
   "progressEvery": 250,
   "historyWindow": 10,
